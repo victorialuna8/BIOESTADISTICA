@@ -1,0 +1,578 @@
+---
+title: "Análisis estadísticos"
+#Victoria Galilea Miranda Lun
+format: html
+editor: visual
+---
+
+```{r}
+#| code-fold: true
+#| label: load-packages
+#| warning: false
+#| message: false
+
+
+library(tidyverse)
+library(palmerpenguins)
+library(ggthemes)
+library(RColorBrewer)
+library(plotly)
+library(pheatmap)
+library(corrplot)
+library(plotrix)
+library(tastypie)
+
+library(gplots)
+library(ggmosaic)
+library(treemapify)
+library(ggridges)
+library(ggalluvial)
+library(scatterPlotMatrix)
+
+library(readxl)
+library(writexl)
+
+library(multcomp)
+library(agricolae)
+
+```
+
+# Importar datos e identificar variables
+
+```{r}
+#| code-fold: true
+
+data("penguins")
+datos <- penguins
+head(datos)
+glimpse(datos)
+```
+
+## Filtro observaciones completas
+
+```{r}
+datos <- datos[complete.cases(datos), ]
+datos$Delta_mass <- rnorm(nrow(datos), mean=10, sd=7)
+datos <- datos |> mutate(mass_after= body_mass_g+Delta_mass)
+
+glimpse(datos)
+```
+
+# Resúmenes estadísticos `body_mass_g`
+
+## Factor: species
+
+```{r}
+#| code-fold: true
+
+
+sum_species_body_mass <- datos |> dplyr::group_by(species) |> dplyr::summarise(Conteo=n(), Media=mean(body_mass_g), DS=sd(body_mass_g))
+
+sum_species_body_mass
+
+```
+
+## Factor: sex
+
+```{r}
+#| code-fold: true
+
+
+sum_sex_body_mass <- datos |> dplyr::group_by(sex) |> dplyr::summarise(Conteo=n(), Media=mean(body_mass_g), DS=sd(body_mass_g))
+
+sum_sex_body_mass
+
+```
+
+# Comparación t-test Adelie-Gentoo
+
+## Filtro
+
+```{r}
+#| code-fold: true
+
+datos_Adelie_Gentoo <- datos |> filter(species %in% c("Adelie", "Gentoo"))
+
+levels(datos_Adelie_Gentoo$species)
+
+datos_Adelie_Gentoo$species <- factor(datos_Adelie_Gentoo$species)
+
+levels(datos_Adelie_Gentoo$species)
+```
+
+## Boxplot
+
+```{r}
+#| code-fold: true
+
+ggplot(datos_Adelie_Gentoo)+
+    geom_boxplot(aes(x=species, y=body_mass_g, color = species), show.legend = FALSE)+
+    stat_summary(aes(x=species, y=body_mass_g),fun=mean, geom="point", shape=20, size=5, color="#8B1888", fill="#4B4C75") +
+    theme_bw()
+```
+
+## Cálculos preliminares
+
+```{r}
+#| code-fold: true
+
+datos_Adelie <- datos_Adelie_Gentoo |> filter(species=="Adelie") 
+x1 <- mean(datos_Adelie$body_mass_g)
+s1 <- sd(datos_Adelie$body_mass_g)
+n1 <- nrow(datos_Adelie)
+x1
+s1
+n1
+
+datos_Gentoo <- datos_Adelie_Gentoo |> filter(species=="Gentoo") 
+x2 <- mean(datos_Gentoo$body_mass_g)
+s2 <- sd(datos_Gentoo$body_mass_g)
+n2 <- nrow(datos_Gentoo)
+x2
+s2
+n2
+
+
+
+```
+
+## Cálculo de diferencia de las medias, error estándar de la diferencia, grados de libertad y t crítico
+
+```{r}
+#| code-fold: true
+
+
+x12 <- x1-x2
+x12
+se12 <- sqrt(s1^2/n1+s2^2/n2)
+se12
+df12 <- se12^4/((s1^2/n1)^2/(n1-1)+(s2^2/n2)^2/(n2-1))
+df12
+t_crit <- qt(0.025, df12, lower.tail = FALSE)
+t_crit
+
+```
+
+## Extremos del intervalo de confianza (nivel 0.95)
+
+```{r}
+#| code-fold: true
+
+
+low_value <- x12-t_crit*se12
+low_value
+
+upper_value <- x12+t_crit*se12
+upper_value
+
+```
+
+## Estadística t y p value
+
+```{r}
+#| code-fold: true
+
+
+t_est <- x12/se12
+t_est
+
+p_value <- 2* pt(abs(t_est), df12, lower.tail = FALSE) 
+p_value
+
+```
+
+## Usando la función t.test
+
+```{r}
+#| code-fold: true
+
+
+t.test(body_mass_g ~ species, data=datos_Adelie_Gentoo, alternative="two.sided")
+
+```
+
+## t-test flipper length
+
+```{r}
+#| code-fold: true
+
+ggplot(datos_Adelie_Gentoo)+
+  geom_density(aes(flipper_length_mm, fill=species, color=species), alpha=0.5)+
+  theme_bw()
+
+t.test(flipper_length_mm ~ species, data= datos_Adelie_Gentoo, alternative="two.sided")
+
+```
+
+# Comparación t-test Adelie-Chinstrap
+
+## Filtro
+
+```{r}
+#| code-fold: true
+
+datos_Adelie_Chinstrap <- datos |> filter(species %in% c("Adelie", "Chinstrap"))
+
+levels(datos_Adelie_Chinstrap$species)
+
+datos_Adelie_Chinstrap$species <- factor(datos_Adelie_Chinstrap$species)
+
+levels(datos_Adelie_Chinstrap$species)
+```
+
+## t test body_mass
+
+```{r}
+#| code-fold: true
+
+ggplot(datos_Adelie_Chinstrap)+
+  geom_violin(aes(species, body_mass_g, fill=species), alpha=0.5, show.legend = FALSE)+
+  theme_bw()
+
+
+
+t.test(body_mass_g ~ species, data=datos_Adelie_Chinstrap, alternative="two.sided")
+
+```
+
+# t-test emparejada
+
+```{r}
+#| code-fold: true
+
+datos <- datos |> mutate(Diferencia= body_mass_g- mass_after)
+
+t.test(datos$body_mass_g, datos$mass_after, alternative = "two.side", paired=TRUE)
+
+
+
+```
+
+# Correlation test
+
+```{r}
+#| code-fold: true
+
+data_num <- dplyr::select(datos, where(is.numeric), -year)
+
+cor_mat <- cor(data_num)
+cor_mat
+
+corrplot(cor_mat, method = "color", order = "AOE")
+```
+
+```{r}
+#| code-fold: true
+
+test_corr <- cor.mtest(data_num, conf.level=0.95)
+test_corr
+
+```
+
+```{r}
+#| code-fold: true
+
+corrplot(cor_mat, p.mat= test_corr$p, method = "color")
+
+```
+
+## Anova: Paso a paso
+
+Diferencia de body_mass_g entre especies (3 grupos)
+
+```{r}
+#| code-fold: true
+
+ggplot(datos)+
+    geom_boxplot(aes(x=species, y=body_mass_g, color = species), show.legend = FALSE)+
+    stat_summary(aes(x=species, y=body_mass_g),fun=mean, geom="point", shape=20, size=5, color="#27408B", fill="#27408B") +
+    theme_bw()
+```
+
+### Variación entre grupos
+
+```{r}
+#| code-fold: true
+
+
+media_total <- mean(datos$body_mass_g)
+ssb_tabla <- datos |> group_by(species) |> summarise(conteo=n(), media_grupo=mean(body_mass_g))
+ssb_tabla <- ssb_tabla |> mutate(dif_sq_n=conteo*(media_grupo-media_total)^2)
+ssb <- sum(ssb_tabla$dif_sq_n)
+
+
+ssb_tabla
+```
+
+body_mass_g media (sin considerar especies): `r round(media_total, 3)`
+
+Variación entre los grupos: `r round(ssb, 3)`
+
+### Variación en los grupos
+
+```{r}
+#| code-fold: true
+
+media_adelie <- ssb_tabla$media_grupo[1]
+media_chinstrap <- ssb_tabla$media_grupo[2]
+media_gentoo <- ssb_tabla$media_grupo[3]
+
+
+ssw_tabla <- datos |> dplyr::select(species, body_mass_g)
+ssw_tabla$df_sq_g <- 0
+ssw_tabla <- ssw_tabla |> mutate(df_sq_g=if_else(species=="Adelie", (body_mass_g-media_adelie)^2, df_sq_g)) 
+ssw_tabla <- ssw_tabla |> mutate(df_sq_g=if_else(species=="Chinstrap", (body_mass_g-media_chinstrap)^2, df_sq_g)) 
+ssw_tabla <- ssw_tabla |> mutate(df_sq_g=if_else(species=="Gentoo", (body_mass_g-media_gentoo)^2, df_sq_g))
+
+ssw <- sum(ssw_tabla$df_sq_g)
+
+
+```
+
+Variación en los grupos: `r round(ssw, 3)`
+
+## Estadística F y cálculo de p-value
+
+```{r}
+#| code-fold: true
+
+mean_sq <- ssb/2
+emc <- ssw/(nrow(datos)-3)
+est_f <- mean_sq/emc
+
+
+df_1 <- 2
+df_2 <- nrow(datos)-3
+
+
+graf_den <- ggplot()+
+  geom_function(fun=df, color="gold", args = list( df1= df_1, df2=df_2), xlim=c(0,  6))+
+  # stat_function(fun=dnorm, color="firebrick", args = list(mean = 0, sd = 1), xlim=c(-3,  z_value1), geom="area", fill="olivedrab3")+
+  # stat_function(fun=dnorm, color="firebrick", args = list(mean = 0, sd = 1), xlim=c(-1*z_value1, 3), geom="area", fill="olivedrab3")+
+  theme_bw()
+
+
+graf_den
+
+
+valor_p <- pf(est_f, df_1, df_2, lower.tail = FALSE)
+
+
+valor_p
+
+```
+
+## Anova con la función aov
+
+```{r}
+#| code-fold: true
+
+anova_res <- aov(body_mass_g~ species, data=datos)
+anova_res
+summary(anova_res)
+```
+
+## Prueba de Tukey
+
+```{r}
+#| code-fold: true
+
+parejas_tukey <- glht(anova_res, linfct = mcp(species = "Tukey"))
+summary(parejas_tukey)
+   lab_data_aov <- cld(parejas_tukey)$mcletters$Letters %>% as.vector()
+   
+   margen <- par(oma=c(0,5,0,0))
+   plot(config(parejas_tukey), xlab=NULL)
+   par(margen)
+   
+   
+data_Q75 <- datos %>% group_by(species) %>% summarise(Q75=quantile(body_mass_g, 0.75, na.rm = TRUE))
+
+  data_lab <-  data.frame(
+  x=0.75:2.75,
+  y=data_Q75$Q75,
+  lab=lab_data_aov
+)
+
+
+
+
+tn_box <- ggplot(datos, aes(x=species,body_mass_g))+
+  geom_boxplot(aes(color=species), show.legend = FALSE)+
+  geom_text(data=data_lab, aes(x,y,label=lab), size=6, vjust=-0.2)+
+  theme_bw()+
+  theme(
+#plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
+legend.position="top",
+legend.title = element_blank(),
+legend.text = element_text(size=12),
+axis.text.x=element_text(size=12),
+axis.text.y=element_text(size=12),
+axis.title.x = element_text(face="bold", size=14),
+axis.title.y = element_text(face="bold", size=14),
+strip.text.x = element_text(size = 12)
+)
+
+
+
+tn_box 
+
+
+   
+   
+
+
+```
+
+### Otras funciones para el Tukey test
+
+```{r}
+#| code-fold: true
+
+tukey_2 <- TukeyHSD(anova_res)
+tukey_2
+
+plot(tukey_2)
+
+```
+
+```{r}
+#| code-fold: true
+
+tukey_3 <- HSD.test(anova_res, trt='species')
+tukey_3
+
+plot(tukey_3)
+
+```
+
+## Regresión lineal simple (paso a paso)
+
+Consideremos como variable de respuesta `body_mass_g` y como predictor a `flipper_length_mm`.
+
+```{r}
+ggplot(datos)+
+    geom_point(aes(x = flipper_length_mm, y = body_mass_g, color = species)) +
+    geom_smooth(aes(x = flipper_length_mm, y = body_mass_g), method = "lm") +
+    #labs(x = val_x, y = val_y, color = "Species") +
+    scale_color_colorblind()+
+    theme_bw()
+```
+
+Calculamos la media de cada variable:
+
+```{r}
+#| code-fold: true
+
+media_x <- mean(datos$flipper_length_mm)
+
+media_x
+
+media_y <- mean(datos$body_mass_g)
+
+media_y
+
+
+```
+
+Calculamos la diferencia de las medias para cada variable, el cuadrado de las diferencias y el producto de las desviaciones:
+
+```{r}
+#| code-fold: true
+
+
+datos_slm <- datos |> dplyr::select(species, flipper_length_mm, body_mass_g)
+datos_slm <- datos_slm |> mutate(dif_x=flipper_length_mm-media_x, dif_x2=dif_x^2,
+                                 dif_y=body_mass_g-media_y, dif_y2=dif_y^2, dif_xy=dif_x*dif_y)
+
+
+```
+
+Se estiman los coeficientes:
+
+```{r}
+#| code-fold: true
+
+b_1 <- sum(datos_slm$dif_xy)/sum(datos_slm$dif_x2)
+b_1
+
+b_0 <- media_y-b_1*media_x
+
+b_0
+
+
+```
+
+Se estiman los valores con el modelo, se calcula el error para cada observación y el cuadradrado:
+
+```{r}
+#| code-fold: true
+
+
+datos_slm <- datos_slm |> mutate(body_est=b_0+b_1*flipper_length_mm, error=body_mass_g-body_est, error_sq=error^2)
+```
+
+Se calculan: RSS, RSE, SE($\beta_0$), SE($\beta_1$), las estadísticas t para cada coeficiente, sus p-values y los respectivos intervalos de confianza:
+
+```{r}
+RSS <- sum(datos_slm$error_sq)
+RSS
+
+RSE <- sqrt(RSS/(nrow(datos_slm)-2))
+RSE
+
+SE_b0 <- RSE*sqrt(1/nrow(datos_slm)+ media_x^2/sum(datos_slm$dif_x2))
+SE_b0
+
+SE_b1 <- RSE/sqrt(sum(datos_slm$dif_x2))
+SE_b1
+
+
+t_b0 <- b_0/SE_b0
+t_b0
+
+t_b1 <- b_1/SE_b1
+t_b1
+
+
+b0_pval <- pt(abs(t_b0), nrow(datos_slm)-2, lower.tail = FALSE)
+b0_pval
+
+b1_pval <- pt(abs(t_b1), nrow(datos_slm)-2, lower.tail = FALSE)
+b1_pval
+
+
+lower_b0 <- b_0- qt(0.975, nrow(datos_slm)-2)*SE_b0
+lower_b0
+
+upper_b0 <- b_0+ qt(0.975, nrow(datos_slm)-2)*SE_b0
+upper_b0
+
+
+lower_b1 <- b_1- qt(0.975, nrow(datos_slm)-2)*SE_b1
+lower_b1
+
+upper_b1 <- b_1+ qt(0.975, nrow(datos_slm)-2)*SE_b1
+upper_b1
+
+```
+
+Cálculo de $R^2$, la estadística $F$ y el respectivo p-value
+
+```{r}
+TSS <- sum(datos_slm$dif_y2)
+R_sq <- (TSS-RSS)/TSS
+R_sq
+
+
+F_est <- (TSS-RSS)/(RSS/(nrow(datos_slm)-2))
+F_est
+F_pval <- pf(F_est, 1, 331, lower.tail = FALSE)
+F_pval
+```
+
+Distribución de los residuos
+
+```{r}
+summary(datos_slm$error)
+```

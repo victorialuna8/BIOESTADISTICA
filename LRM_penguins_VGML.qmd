@@ -1,0 +1,96 @@
+---
+title: "Regresión lineal"
+#Victoria Galilea Miranda Luna
+format: html
+editor: visual
+---
+
+```{r}
+#| code-fold: true
+#| label: load-packages
+#| warning: false
+#| message: false
+
+
+library(tidyverse)
+library(palmerpenguins)
+library(ggthemes)
+library(RColorBrewer)
+library(plotly)
+library(pheatmap)
+library(corrplot)
+library(plotrix)
+library(tastypie)
+
+library(gplots)
+library(ggmosaic)
+library(treemapify)
+library(ggridges)
+library(ggalluvial)
+library(scatterPlotMatrix)
+
+library(readxl)
+library(writexl)
+
+library(multcomp)
+library(agricolae)
+library(rgl)
+library(car)
+knitr::knit_hooks$set(webgl = hook_webgl)
+```
+
+# Importar datos e identificar variables
+
+```{r}
+data("penguins")
+datos <- penguins
+head(datos)
+glimpse(datos)
+```
+
+## Filtro observaciones completas
+
+```{r}
+datos <- datos[complete.cases(datos), ]
+
+glimpse(datos)
+```
+
+## Regresión lineal simple
+
+```{r}
+ggplot(datos)+
+    geom_point(aes(x = flipper_length_mm, y = body_mass_g, color = species)) +
+    geom_smooth(aes(x = flipper_length_mm, y = body_mass_g), method = "lm") +
+    #labs(x = val_x, y = val_y, color = "Species") +
+    scale_color_colorblind()+
+    theme_bw()
+```
+
+```{r}
+bm_fl <- lm(body_mass_g~ flipper_length_mm, data=datos)
+
+summary(bm_fl)
+```
+
+Intervalos de confianza
+
+```{r}
+confint(bm_fl)
+```
+
+## Regresión lineal múltiple
+
+```{r webgl=TRUE}
+scatter3d(body_mass_g~ flipper_length_mm + bill_length_mm, data= datos, fit="linear", residuals=TRUE, bg="white", axis.scales=TRUE,  grid=TRUE, ellipsoid=FALSE)
+```
+
+```{r}
+bm_fl_bl <- lm(body_mass_g~ flipper_length_mm + bill_length_mm, data=datos)
+summary(bm_fl_bl)
+```
+
+```{r}
+bm_fl_bl_sp <- lm(body_mass_g~ flipper_length_mm + bill_length_mm+ species, data=datos)
+summary(bm_fl_bl_sp)
+```
