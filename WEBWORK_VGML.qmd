@@ -1,0 +1,53 @@
+---
+title: "Webwork"
+#Victoria Galilea Miranda Luna
+format: html
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| code-fold: true
+#| code-summary: "Cargar paquetes (haz clic para desplegar)"
+#| warning: false
+#| message: false
+
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(plotly))
+
+```
+
+### Problema 10. Tarea 5
+
+Let $X$ be normally distributed with mean, $\mu$, and standard deviation, $\sigma=\mu$. Also suppose $Pr(−7<X<15)=0.5911$. Find the value of the mean, $\mu$.
+
+```{r}
+a <- -7
+b <- 15
+
+tabla_p10 <- tibble(media=seq(from=a, to = b, by=0.1), p_int= pnorm(b/media-1)-pnorm(a/media-1))
+
+ggplot()+
+ geom_function(fun=dnorm, color="pink", args =list(mean=10,9, sd=10.9), xlim=c(-21.8, 43.6))+
+ stat_function(fun=dnorm, color="pink", args =list(mean=10.9, sd=10.9), xlim=c(-7,15), geom="area", fill="violet")
+
+
+```
+
+### Ejemplo 10 5
+
+$X\sim bin(10,1/3)$
+
+```{r}
+tabla_ejem <- tibble(x=0:10, f_prob= dbinom(x, 10, 1/3))
+
+graf_ejemplo <- ggplot(tabla_ejem)+
+  geom_segment(aes(x=x, xend=x, y=0, yend=f_prob), color="gold")+
+  geom_point(aes(x, f_prob), color="blue", size=1.5)+
+  theme_bw()
+ggplotly(graf_ejemplo)
+
+aprobado_prob <- tabla_ejem |> filter(x>=6)
+aprobado_prob_valor <- sum(aprobado_prob$f_prob)
+aprobado_prob_valor
+```

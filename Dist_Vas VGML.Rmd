@@ -1,0 +1,88 @@
+---
+title: "Distribuciones de Variables Aleatorias"
+#Victoria Galilea Miranda Luna
+output: 
+  html_document:
+    theme: cerulean
+---
+
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(plotly)
+```
+
+
+
+
+
+## Distribución uniforme
+
+Gráfica de la función de probabilidad.
+
+```{r}
+n <- 10
+
+x_values <- 1:n  #Genero una lista de númer
+f_prob <- rep(1/n, n)
+
+
+ggplot()+
+   geom_point(aes(x_values, f_prob), size=3, color="purple")+
+   labs(title="Función de probabilidad. Uniforme discreta",
+        x="X", y="Probabilidad")+
+   scale_x_continuous(breaks = 1:10)+
+   theme_bw()
+```
+
+Generar una muestra.
+
+```{r}
+N <- 50000
+muestra <- sample(1:n, N, replace = TRUE)
+table(muestra)
+```
+
+Gráfica de frecuencias.
+
+```{r}
+ggplot()+
+  geom_bar(aes(factor(muestra)), color="violet", fill="gold")+
+  labs(x="Valores", y="Frecuencias")+
+  theme_bw()
+```
+
+Media muestral, compararla con la esperanza de la VA $E(X)=(n+1)/2$.
+
+```{r}
+Media <- mean(muestra)
+Media
+E_X <- (n+1)/2
+E_X
+```
+
+Varianza muestral, compararla con la varianza de la VA, $Var(X)=(n^2-1)/12$.
+
+```{r}
+Varianza <- var(muestra)
+Varianza
+Var_X <- (n^2-1)/12
+Var_X
+
+```
+
+
+
+
+
+
+```{r}
+tabla_normal <- tibble(x= rnorm(100), y=rnorm(100))
+
+
+
+ggplot(tabla_normal)+
+  geom_point(aes(x,y))
+```
+

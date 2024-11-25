@@ -1,0 +1,387 @@
+---
+title: "Variables Aleatorias: Distribuciones continuas"
+#Victoria Galilea Miranda Luna
+format: html
+editor: visual
+---
+
+```{r}
+
+#| label: load-packages
+#| code-fold: true
+#| code-summary: "Cargar paquetes (haz clic para desplegar)"
+#| warning: false
+#| message: false
+
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(plotly))
+
+```
+
+# Distribución uniforme continua
+
+$X\sim unif(a,b)$
+
+```{r}
+#| code-fold: true
+
+a <- 1
+b <- 5
+
+tabla_continua <- tibble(x=seq(from=a, to=b, length.out=10),
+                         f_x=dunif(x, min=a, max=b))
+
+ggplot(tabla_continua)+
+  geom_line(aes(x, f_x), color="pink")+
+  theme_bw()
+                         
+```
+
+## Función de distribución
+
+```{r}
+#| code-fold: true
+
+tabla_continua <- tabla_continua |> mutate(f_d=punif(x, min=a, max=b))
+
+ggplot(tabla_continua)+
+  geom_line(aes(x, f_d), color="#698B69")+
+  theme_bw()
+
+
+```
+
+## Muestra
+
+```{r}
+#| code-fold: true
+
+N <- 5000
+n_bin <- 20
+
+muestra_continua <- tibble(ID=paste("Muestra", 1:N, sep="_"),
+                           x= runif(N, min=a, max=b))
+
+ggplot(muestra_continua)+
+  geom_histogram(aes(x), color="brown", fill="yellow",boundary=1, binwidth= (b-a)/n_bin)+
+  theme_bw()
+
+
+ggplot(muestra_continua)+
+  geom_density(aes(x, after_stat(count)), color="purple", fill="pink",)+
+  theme_bw()
+```
+
+## Media y varianza
+
+```{r}
+#| code-fold: true
+
+mean(muestra_continua$x)
+var(muestra_continua$x)
+
+```
+
+# Distribución exponencial
+
+$X\sim exp(/lambda)$
+
+## Función de densidad
+
+```{r}
+#| code-fold: true
+
+lambda <- 0.5
+
+tabla_exp <- tibble(x=seq(from=0, to=10, length.out=100),
+                         f_x= dexp(x, rate=lambda), f_d=pexp(x,lambda), rate=lambda)
+
+lambda_vector <- c(1, 2.5, 3, 5)
+
+for (lambda_j in lambda_vector) {
+  tabla_preliminar <- tibble(x=seq(from=0, to=10, length.out=100),
+                         f_x= dexp(x, rate=lambda_j), f_d=pexp(x,lambda_j), rate=lambda_j)
+  tabla_exp <- bind_rows(tabla_exp, tabla_preliminar)
+  
+}
+
+tabla_exp$rate <- factor(tabla_exp$rate)
+
+graf_exp <- ggplot(tabla_exp)+
+  geom_line(aes(x, f_x, color=rate))+
+  theme_bw()
+
+ggplotly(graf_exp)
+                         
+```
+
+## Función de distribución
+
+```{r}
+#| code-fold: true
+
+
+ggplot(tabla_exp)+
+  geom_line(aes(x, f_d, color=rate))+
+  theme_bw()
+```
+
+## Muestra
+
+```{r}
+#| code-fold: true
+
+N <- 5000
+n_bin <- 20
+
+muestra_exp <- tibble(x= rexp(N, lambda), rate=lambda)
+                          
+lambda_vector <- c(1, 2.5, 3, 5)
+
+for (lambda_j in lambda_vector) {
+  tabla_preliminar <- tibble(x= rexp(N, lambda_j), rate=lambda_j)
+                      
+  tabla_exp <- bind_rows(muestra_exp, tabla_preliminar)
+  
+}
+
+muestra_exp$rate <- factor(muestra_exp$rate)
+
+
+ggplot(muestra_exp)+
+  geom_histogram(aes(x, fill=rate)  ,boundary=1, binwidth= (b-a)/n_bin)+
+  theme_bw()
+
+
+ggplot(muestra_exp)+
+  geom_density(aes(x, fill=rate))
+  theme_bw()
+
+
+                         
+
+```
+
+## Media y varianza
+
+```{r}
+#| code-fold: true
+
+mean(muestra_continua$x)
+var(muestra_continua$x)
+
+```
+
+## Distribución Gama
+
+$X\sim exp(/alpha/lambda)$
+
+```{r}
+#| code-fold: true
+
+lambda <- 2
+alfa <- 1
+
+tabla_gamma <- tibble(x=seq(from=0, to=10, length.out=100),
+                         f_x= dgamma(x, shape=alfa, rate=lambda), f_d=pgamma(x, shape=alfa, rate=lambda), alfa=alfa)
+
+alfa_vector <- c(1.2, 1.8,2)
+
+for (alfa_j in alfa_vector) {
+  tabla_preliminar <- tibble(x=seq(from=0, to=5, length.out=200),
+                         f_x= dgamma(x, shape=alfa, rate=lambda), f_d=pgamma(x, shape=alfa, rate=lambda), alfa=alfa_j)
+  
+  tabla_gamma <- bind_rows(tabla_gamma, tabla_preliminar)
+  
+}
+
+tabla_gamma$alfa <- factor(tabla_gamma$alfa)
+
+graf_gamma <- ggplot(tabla_gamma)+
+  geom_line(aes(x, f_x, color=alfa))+
+  theme_bw()
+
+ggplotly(graf_gamma)
+                         
+```
+
+## Función de distribución
+
+```{r}
+#| code-fold: true
+
+ggplot(tabla_gamma)+
+  geom_line(aes(x, f_d, color=alfa))+
+  theme_bw()
+
+```
+
+##Muestra
+
+```{r}
+#| code-fold: true
+N <- 5000
+
+shape <- 2
+rate <- 0.5
+
+
+muestra_gamma <- tibble(x = rgamma(N, shape, rate), shape = shape, rate = rate)
+parametros_gamma <- list(c(2, 0.5), c(3, 0.75), c(4, 1))
+
+for (param in parametros_gamma) {
+  shape_j <- param[1]
+  rate_j <- param[2]
+  
+tabla_preliminar <- tibble(x = rgamma(N, shape_j, rate_j), shape = shape_j, rate = rate_j)
+ muestra_gamma <- bind_rows(muestra_gamma, tabla_preliminar)
+}
+
+
+muestra_gamma$shape <- factor(muestra_gamma$shape)
+muestra_gamma$rate <- factor(muestra_gamma$rate)
+
+ggplot(muestra_gamma) +
+  geom_histogram(aes(x, fill = interaction(shape, rate)), color = "black", boundary = 0) +
+  theme_bw()
+
+ggplot(muestra_gamma) +
+  geom_density(aes(x, fill = interaction(shape, rate)), alpha = 0.1, color = "black") +
+  theme_bw()
+```
+
+##Cálculo de la media y la varianza
+
+```{r}
+#| code-fold: true
+
+mean(muestra_gamma$x)
+var(muestra_gamma$x)
+
+```
+
+# Distribución normal
+
+$X\sim N(\mu, \sigma^2)$
+
+## Función de densidad
+
+```{r}
+#| code-fold: true
+
+
+mu<- 10
+sigma <- 0.5
+
+tabla_norm <- tibble(x=seq(from=0, to=20, length.out=200),
+                         f_x= dnorm(x, mean=mu, sd=sigma), f_d=pnorm(x,mu,sigma), desv_std=sigma)
+
+sigma_vector <- c(1, 2.5, 3, 5)
+
+for (sigma_j in sigma_vector) 
+{
+  tabla_preliminar <- tibble(x=seq(from=0, to=20, length.out=200),
+                         f_x= dnorm(x, mean=mu, sd=sigma_j), f_d=pnorm(x,mu,sigma_j), desv_std=sigma_j)
+  
+  tabla_norm <- bind_rows(tabla_norm, tabla_preliminar)
+  
+}
+
+tabla_norm$desv_std <- factor(tabla_norm$desv_std)
+
+graf_norm <- ggplot(tabla_norm)+
+  geom_line(aes(x, f_x, color=desv_std))+
+  theme_bw()
+
+ggplotly(graf_norm)
+                         
+```
+
+## Función de distribución
+
+```{r}
+#| code-fold: true
+
+
+ggplot(tabla_norm)+
+  geom_line(aes(x, f_d, color=desv_std))+
+  theme_bw()
+```
+
+## Regla 0.68, 0.95, 0.997
+
+```{r}
+#| code-fold: true
+
+ggplot()+
+  geom_function(fun=dnorm, color = "#8B475D", xlim=c(-3.1, 3.1)) +
+  stat_function(fun=dnorm, color = "#8B475D", xlim=c(-3, 3), geom="area", fill="#FFB6C1", alpha=0.5 )+
+  stat_function(fun=dnorm, color = "#8B475D", xlim=c(-2, 2), geom="area", fill="#FF6EB4", alpha=0.5 )+
+  stat_function(fun=dnorm, color = "#8B475D", xlim=c(-1, 1), geom="area", fill="#CD69C9", alpha=0.5 )+
+  theme_bw()
+
+```
+
+## Muestra
+
+```{r}
+#| code-fold: true
+
+N <- 5000
+mu <- 0
+
+muestra_norm <- tibble(x= rnorm(N, mean=mu, sd=1), desv_std=1)
+                          
+sigma_vector <- c(1.25, 1.5, 5)
+
+for (sigma_j in sigma_vector) 
+{
+  tabla_preliminar <- tibble(x= rnorm(N, mean=mu, sd=sigma_j), desv_std=sigma_j)
+                      
+  muestra_norm <- bind_rows(muestra_norm, tabla_preliminar)
+  
+}
+
+muestra_norm$desv_std <- factor(muestra_norm$desv_std)
+
+
+ggplot(muestra_norm)+
+  geom_histogram(aes(x, fill=desv_std), color="black", boundary=0)
+  theme_bw()
+
+
+ggplot(muestra_norm)+
+  geom_density(aes(x, fill=desv_std), alpha=0.1, color="black")+
+  theme_bw()
+
+
+                         
+
+```
+
+## Media y varianza
+
+```{r}
+#| code-fold: true
+
+resumen_norm <- muestra_norm |> group_by(desv_std) |> summarise(media=mean(x), varianza=var(x), desv_std=sd(x))
+resumen_norm
+
+```
+
+### Problema 10. Tarea 5
+
+Let $X$ be normally distributed with mean, $\mu$, and standard deviation, $\sigma=\mu$. Also suppose $Pr(−7<X<15)=0.5911$. Find the value of the mean, $\mu$.
+
+```{r}
+a <- -7
+b <- 15
+
+tabla_p10 <- tibble(media=seq(from=a, to = b, by=0.1), p_int= pnorm(b/media-1)-pnorm(a/media-1))
+
+ggplot()+
+ geom_function(fun=dnorm, color="gold", args =list(mean=10,9, sd=10.9), xlim=c(-21.8, 43.6))+
+ stat_function(fun=dnorm, color="gold", args =list(mean=10.9, sd=10.9), xlim=c(-7,15), geom="area", fill="orange")
+
+
+```

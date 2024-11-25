@@ -1,0 +1,143 @@
+---
+title: "Distribuciones de Variables Aleatorias"
+#Victoria Galilea Miranda Luna
+output: 
+  html_document:
+    theme: cerulean
+---
+
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(plotly)
+```
+
+
+
+
+
+## Distribución uniforme
+
+Gráfica de la función de probabilidad.
+
+
+
+
+
+
+```{r}
+n <- 10
+
+x_values <- 1:n # Genero una lista de números de 1 a n
+f_prob <- rep(1/n, n)
+
+
+ggplot()+
+   geom_point(aes(x_values, f_prob), size=3, color="violet")+
+   labs(title="Función de probabilidad. Uniforme discreta",
+        x="X", y="Probabilidad")+
+   scale_x_continuous(breaks = 1:n)+
+   theme_minimal()
+```
+
+Generar una muestra.
+
+```{r}
+N <- 10000
+muestra <- sample(1:n, N, replace = TRUE)
+table(muestra)
+```
+
+Gráfica de frecuencias.
+
+```{r}
+ggplot()+
+  geom_bar(aes(factor(muestra), fill=factor(muestra)), color="black", alpha=1, show.legend = FALSE)+
+  labs(x="Valores", y="Frecuencias")+
+  theme_bw()
+```
+
+Media muestral, compararla con la esperanza de la VA $E(X)=(n+1)/2$.
+
+```{r}
+Media <- mean(muestra)
+Media
+E_X <- (n+1)/2
+E_X
+```
+
+Varianza muestral, compararla con la varianza de la VA, $Var(X)=(n^2-1)/12$.
+
+```{r}
+Varianza <- var(muestra)
+Varianza
+Var_X <- (n^2-1)/12
+Var_X
+
+```
+
+
+```{r}
+tabla_normal <- tibble(x= rnorm(100), y=rnorm(100))
+
+
+
+ggplot(tabla_normal)+
+  geom_point(aes(x,y))
+```
+
+## Distribución Bernoulli
+
+Generamos una muestra $x\sim Ber(p)$
+
+```{r}
+N <- 100
+muestra <- rbinom(N, 1, 0.8)
+table (muestra)
+
+```
+
+Gráfica de barras
+
+```{r}
+ggplot()+
+  geom_bar(aes(factor(muestra), fill=factor(muestra)), show.legend = FALSE, color="blue") + theme_bw()
+```
+
+Comparar la media muestral con las esperanza $E(X)=p=0.8$
+
+```{r}
+mean(muestra)
+```
+Comparamos la varianza muestral con $var(x)=p(1-p)=0.16$
+```{r}
+var(muestra)
+```
+
+## Distribución Binomial
+
+Gráfica de probabilidad $x\sim bin(n,p)$
+
+```{r}
+n <- 5
+p <- 0.8
+
+table_bin <- tibble(x=0:n, f_x=choose(n,x)*p^x*(1-p)^(n-x), otra_f_x= dbinom(x,n,p))
+
+graf_bin <- ggplot(table_bin)+ geom_segment( aes(x=x, xend=x, y=0, yend=f_x), color="yellow")+
+  geom_point(aes(x,f_x), color="pink", size=3)+ theme_bw()
+
+ggplotly(graf_bin)
+```
+Generamos una muestra
+
+```{r}
+N<- 100
+muestra_bin <- tibble(ID_muestra= paste("Muestra", 1:N, sep= "_"), x=rbinom(N, n, p,))
+
+table(muestra_bin$x)
+ggplot(muestra_bin)+
+  geom_bar(aes(x), fill="green", color="black")+ theme_bw()
+```
+
